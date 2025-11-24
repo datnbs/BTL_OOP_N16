@@ -20,11 +20,14 @@ import nhom16oop.ui.board.ChessTile;
 import nhom16oop.ui.components.dialogs.GameOverDialog;
 import nhom16oop.ui.components.dialogs.PromotionDialog;
 import nhom16oop.utils.BoardUtils;
+import nhom16oop.utils.ChessNotationUtils;
 import nhom16oop.utils.SoundPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -833,7 +836,7 @@ public final class ChessController implements MoveExecutor {
             // }
 
             // Build a GameSave object (you may change fields as needed)
-            GameSave save = GameSave.fromController(this); // implement static helper in GameSave
+            GameSave save = this.toGameSave(); // implement static helper in GameSave
             FileManager.save(save);
             logger.info("Game saved to history (auto name)");
             return true;
@@ -850,7 +853,7 @@ public final class ChessController implements MoveExecutor {
                 logger.warn("HistoryManager is null; cannot save");
                 return false;
             }
-            GameSave save = GameSave.fromController(this);
+            GameSave save = this.toGameSave();
             save.setName(name);
             FileManager.save(save);
             logger.info("Game saved to history as '{}'", name);
@@ -868,12 +871,62 @@ public final class ChessController implements MoveExecutor {
             GameSave latest = FileManager.loadLatest();
             if (latest == null) return false;
             // apply board state, history, moves, etc.
-            latest.applyToController(this); // implement in GameSave
+            this.applyFrom(latest);
             return true;
         } catch (Exception ex) {
             logger.error("Failed to load saved game: {}", ex.getMessage(), ex);
             return false;
         }
+    }
+
+    public GameSave toGameSave(){
+        GameSave s = new GameSave();
+        s.gameMode = this.getGameMode();
+        s.timestamp = Instant.now().toEpochMilli();
+        s.name = "save-" + s.timestamp;
+
+        s.chosenWhite = this.humanPlayerColor == PieceColor.WHITE;
+        try {
+            if (boardManager != null) {
+                BoardState state = boardManager.getCurrentBoardState();
+                s.fen = ChessNotationUtils.getFEN(state);
+            }
+            // if (controller.getHistoryManager() != null) {
+            //     s.movesSerialized = controller.getHistoryManager().serializeCurrentHistory();
+            // }
+        } catch (Exception ex) {
+            // best-effort
+        }
+        s.whiteTimeRemaining = chessTimer.getTimeRemaining(PieceColor.WHITE);
+        s.blackTimeRemaining = chessTimer.getTimeRemaining(PieceColor.BLACK);
+        return s;
+    }
+    public void applyFrom(GameSave gameSave) {
+        String FEN = gameSave.fen;
+        // apply fen and moves to controller
+        this.humanPlayerColor = gameSave.chosenWhite ? PieceColor.WHITE : PieceColor.BLACK;
+        try {
+            logger.info("try apply FEN: {}", FEN);
+            if (FEN != null && !FEN.isEmpty()) {
+                boardManager.getCurrentBoardState().setFromFEN(FEN); // implement loadFromFEN if missing
+                // notifyTurnChanged();
+                if (boardUI != null) {
+                    boardUI.clear();
+                    boardUI.repaintPieces();
+                    boardUI.updateBoardUI();
+                }
+            }
+            chessTimer.setTimeRemaining(PieceColor.WHITE, gameSave.whiteTimeRemaining);
+            chessTimer.setTimeRemaining(PieceColor.BLACK, gameSave.blackTimeRemaining);
+            // if (movesSerialized != null && !movesSerialized.isEmpty() && controller.getHistoryManager() != null) {
+            //     controller.getHistoryManager().loadFromSerialized(movesSerialized);
+            // }
+
+        } catch (Exception ex) {
+            // ignore or log
+            logger.error("Failed to apply saved game data: {}", ex.getMessage(), ex);
+        }
+        
     }
 
     // --- Getters and Setters ---

@@ -203,8 +203,4 @@ public class BoardManager {
         
         logger.info("Board loaded from FEN: {}", fen);
     }
-
-    /**
-     * Tạo ChessPiece từ ký tự FEN
-     */
 }

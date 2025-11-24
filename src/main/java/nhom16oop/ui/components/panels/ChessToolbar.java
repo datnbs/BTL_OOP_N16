@@ -77,9 +77,7 @@ public class ChessToolbar extends JPanel implements GameStateListener {
             if (choice == JOptionPane.YES_OPTION) {
                 boolean saved = false;
                 try {
-                    // TODO: phai fix doan nay
-                    // prefer controller-level save API (implement if missing)
-                    // saved = chessController.saveCurrentGameToHistory();
+                    saved = chessController.saveCurrentGame();
                 } catch (Throwable ex) {
                     logger.warn("Save via chessController failed: {}", ex.getMessage(), ex);
                 }
@@ -89,8 +87,7 @@ public class ChessToolbar extends JPanel implements GameStateListener {
                     String filename = JOptionPane.showInputDialog(parent, "Save failed or not supported automatically.\nEnter save name:", "Save Game", JOptionPane.PLAIN_MESSAGE);
                     if (filename != null && !filename.trim().isEmpty()) {
                         try {
-                            // TODO phai them api nay
-                            // saved = chessController.saveCurrentGameToHistory(filename.trim());
+                            saved = chessController.saveCurrentGame(filename.trim());
                         } catch (Throwable ex) {
                             logger.error("Fallback save failed: {}", ex.getMessage(), ex);
                             JOptionPane.showMessageDialog(parent, "Save failed: " + ex.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);

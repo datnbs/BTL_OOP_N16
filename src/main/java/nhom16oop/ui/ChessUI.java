@@ -4,6 +4,7 @@ import nhom16oop.constants.GameMode;
 import nhom16oop.constants.PieceColor;
 import nhom16oop.game.ChessBoard;
 import nhom16oop.game.ChessController;
+import nhom16oop.history.GameSave;
 import nhom16oop.ui.components.panels.ChessToolbar;
 import nhom16oop.ui.components.panels.MoveHistoryPanel;
 import nhom16oop.ui.components.panels.PlayerPanel;
@@ -34,12 +35,34 @@ public class ChessUI {
         chessController.setFrame(frame);
         setupUI();
     }
-    public ChessUI(ChessController chessController) {
-        this.chessController = chessController;
-        this.frame = new JFrame("Chess Game");
-        chessController.setFrame(frame);
-        setupUI();
+public ChessUI(GameSave gameSave) {
+    // tạo controller sạch
+    this.chessController = new ChessController();
+
+    // 1) Thiết lập chế độ trước khi áp state (giống configureGame)
+    PieceColor selectedColor = gameSave.chosenWhite ? PieceColor.WHITE : PieceColor.BLACK;
+    switch (gameSave.gameMode) {
+        case GameMode.PLAYER_VS_PLAYER -> this.chessController.setPlayerVsPlayer();
+        case GameMode.PLAYER_VS_AI -> this.chessController.setPlayerVsAI(selectedColor);
+        default -> this.chessController.setPlayerVsPlayer();
     }
+
+    // 2) Áp state (board, fen, v.v.) vào controller trước khi tạo UI
+    this.chessController.applyFrom(gameSave);
+
+    // 3) Tạo frame + UI sau khi controller đã có state đúng
+    this.frame = new JFrame("Chess Game");
+    chessController.setFrame(frame);
+    setupUI();
+
+    // 4) Sau khi UI được tạo, ép UI đồng bộ hoàn toàn với boardManager
+    if (chessController.getBoardUI() != null) {
+        chessController.getBoardUI().clear();          // sạch các highlight/state cũ
+        chessController.getBoardUI().repaintPieces(); // set piece theo boardManager
+        chessController.getBoardUI().updateBoardUI(); // highlight last move, hints
+    }
+}
+
 
 
 /**

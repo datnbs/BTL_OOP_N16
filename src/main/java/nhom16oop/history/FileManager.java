@@ -23,7 +23,7 @@ public class FileManager {
             java.nio.file.Files.createDirectories(dir);
             java.nio.file.Path file = dir.resolve(save.getName() + ".json");
             java.nio.file.Files.write(file, json.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+            java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
